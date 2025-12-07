@@ -1,0 +1,1337 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小羊的太空生日派对</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* 太空背景动画 */
+        @keyframes twinkle { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+        @keyframes float { 0%, 100% { transform: translateY(0px) rotate(0deg); } 50% { transform: translateY(-20px) rotate(5deg); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes orbit { 0% { transform: rotate(0deg) translateX(var(--orbit-radius)) rotate(0deg); } 100% { transform: rotate(360deg) translateX(var(--orbit-radius)) rotate(-360deg); } }
+        @keyframes moonOrbit { 0% { transform: rotate(0deg) translateX(50px) rotate(0deg); } 100% { transform: rotate(360deg) translateX(50px) rotate(-360deg); } }
+        @keyframes shootingStar { 0%, 100% { opacity: 0; } 10%, 90% { opacity: 1; } 100% { transform: translateX(100vw) translateY(100px); } }
+        @keyframes earthRotate { from { background-position: 0% 0%; } to { background-position: 100% 0%; } }
+        @keyframes marsRotate { from { background-position: 0% 0%; } to { background-position: 100% 0%; } }
+        @keyframes jupiterRotate { from { background-position: 0% 0%; } to { background-position: 100% 0%; } }
+        @keyframes saturnRotate { from { background-position: 0% 0%; } to { background-position: 100% 0%; } }
+        
+        /* 飞船起飞动画 - 优化性能 */
+        @keyframes spaceshipTakeoff {
+            0% { transform: translate(-50%, -50%) scale(0.2) rotateY(0deg) rotateZ(0deg); opacity: 0; filter: blur(20px) brightness(0.5); box-shadow: 0 0 0 rgba(6, 182, 212, 0); }
+            10% { transform: translate(-50%, -50%) scale(0.6) rotateY(360deg) rotateZ(360deg); opacity: 1; filter: blur(0px) brightness(1.2); box-shadow: 0 0 100px rgba(6, 182, 212, 1), 0 0 200px rgba(59, 130, 246, 0.8), 0 0 300px rgba(139, 92, 246, 0.6); }
+            20% { transform: translate(-50%, -200%) scale(0.8) rotateY(720deg) rotateZ(0deg); box-shadow: 0 0 150px rgba(6, 182, 212, 1), 0 0 300px rgba(59, 130, 246, 1), 0 0 450px rgba(139, 92, 246, 0.8); }
+            30%, 40%, 50% { opacity: 0.3; transform: translate(calc(-50% - 100px * var(--step)), calc(-50% - 50px * var(--step))) scale(1 + 0.2 * var(--step)) rotateY(1080deg * var(--step)) rotateZ(360deg * var(--step)); box-shadow: 0 0 200px rgba(6, 182, 212, 1), 0 0 400px rgba(59, 130, 246, 1), 0 0 600px rgba(139, 92, 246, 1); }
+            35%, 45%, 55% { opacity: 1; }
+            60% { transform: translate(-500%, 0%) scale(1.7) rotateY(2160deg) rotateZ(0deg); box-shadow: 0 0 350px rgba(6, 182, 212, 1), 0 0 700px rgba(59, 130, 246, 1), 0 0 1050px rgba(139, 92, 246, 1); }
+            80% { transform: translate(-700%, 50%) scale(2) rotateY(2520deg) rotateZ(360deg); box-shadow: 0 0 400px rgba(6, 182, 212, 0.8), 0 0 800px rgba(59, 130, 246, 0.8), 0 0 1200px rgba(139, 92, 246, 0.6); }
+            100% { transform: translate(100vw, 50%) scale(2.5) rotateY(2880deg) rotateZ(0deg); opacity: 0; filter: blur(20px) brightness(0.5); box-shadow: 0 0 0 rgba(6, 182, 212, 0); }
+        }
+        
+        /* 星空背景 */
+        .space-bg { background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%); position: relative; overflow: hidden; }
+        
+        /* 星星 */
+        .star { position: absolute; background-color: white; border-radius: 50%; animation: twinkle 3s infinite; }
+        .star-small { width: 1px; height: 1px; opacity: 0.8; }
+        .star-medium { width: 2px; height: 2px; opacity: 0.9; }
+        .star-large { width: 3px; height: 3px; opacity: 1; box-shadow: 0 0 5px rgba(255, 255, 255, 0.8); }
+        
+        /* 流星 */
+        .shooting-star { position: absolute; width: 2px; height: 2px; background: linear-gradient(45deg, transparent, white, transparent); border-radius: 50%; animation: shootingStar 5s infinite; opacity: 0; }
+        
+        /* 星云 */
+        .nebula { position: absolute; border-radius: 50%; filter: blur(50px); opacity: 0.3; }
+        
+        /* 太阳系容器 - 响应式调整 */
+        .solar-system { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80vw; height: 80vw; max-width: 1000px; max-height: 1000px; pointer-events: none; }
+        
+        /* 太阳 - 增强真实感 */
+        .sun {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            z-index: 10;
+            background: 
+                radial-gradient(circle at 50% 50%, #ffd700 0%, transparent 40%),
+                radial-gradient(circle at 50% 50%, #ff9800 20%, #f57c00 50%, #e65100 80%, #bf360c 100%),
+                radial-gradient(circle at 30% 30%, rgba(255, 215, 0, 0.8) 0%, transparent 15%),
+                radial-gradient(circle at 70% 70%, rgba(255, 215, 0, 0.6) 0%, transparent 12%),
+                radial-gradient(circle at 20% 70%, rgba(255, 215, 0, 0.7) 0%, transparent 10%),
+                radial-gradient(circle at 80% 20%, rgba(255, 215, 0, 0.5) 0%, transparent 18%),
+                radial-gradient(circle at 40% 45%, rgba(0, 0, 0, 0.3) 0%, transparent 8%),
+                radial-gradient(circle at 60% 35%, rgba(0, 0, 0, 0.25) 0%, transparent 6%),
+                radial-gradient(circle at 55% 65%, rgba(0, 0, 0, 0.2) 0%, transparent 7%),
+                radial-gradient(circle at 50% 50%, #ff9800 0%, #e65100 100%);
+            box-shadow: 
+                0 0 40px rgba(255, 215, 0, 0.9),
+                0 0 80px rgba(255, 152, 0, 0.8),
+                0 0 120px rgba(245, 124, 0, 0.7),
+                0 0 160px rgba(230, 81, 0, 0.6),
+                0 0 200px rgba(191, 54, 12, 0.5),
+                inset 0 0 30px rgba(255, 255, 255, 0.3),
+                inset 0 0 60px rgba(255, 215, 0, 0.2);
+            animation: 
+                sunGlow 4s ease-in-out infinite,
+                sunSurface 20s linear infinite;
+        }
+
+        @keyframes sunGlow {
+            0%, 100% { 
+                box-shadow: 
+                    0 0 40px rgba(255, 215, 0, 0.9),
+                    0 0 80px rgba(255, 152, 0, 0.8),
+                    0 0 120px rgba(245, 124, 0, 0.7),
+                    0 0 160px rgba(230, 81, 0, 0.6),
+                    0 0 200px rgba(191, 54, 12, 0.5),
+                    inset 0 0 30px rgba(255, 255, 255, 0.3),
+                    inset 0 0 60px rgba(255, 215, 0, 0.2);
+            }
+            50% { 
+                box-shadow: 
+                    0 0 50px rgba(255, 215, 0, 1),
+                    0 0 100px rgba(255, 152, 0, 0.9),
+                    0 0 150px rgba(245, 124, 0, 0.8),
+                    0 0 200px rgba(230, 81, 0, 0.7),
+                    0 0 250px rgba(191, 54, 12, 0.6),
+                    inset 0 0 40px rgba(255, 255, 255, 0.4),
+                    inset 0 0 80px rgba(255, 215, 0, 0.3);
+            }
+        }
+
+        @keyframes sunSurface {
+            0% { background-position: 0% 0%; }
+            100% { background-position: 100% 100%; }
+        }
+        
+        /* 行星轨道 */
+        .orbit { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); border: 1px dashed rgba(255, 255, 255, 0.2); border-radius: 50%; }
+        
+        /* 行星容器 */
+        .planet-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); animation: orbit var(--orbit-duration) linear infinite; }
+        
+        /* 行星 - 基础样式 */
+        .planet { position: absolute; border-radius: 50%; box-shadow: 0 0 30px rgba(255, 255, 255, 0.4); background-size: cover; }
+        
+        /* 地球特殊样式 */
+        .earth-container { position: relative; }
+        
+        /* 地球纹理 */
+        .earth {
+            width: 40px; height: 40px;
+            background: radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.3) 0%, transparent 20%),
+                        radial-gradient(circle at 70% 60%, rgba(255, 255, 255, 0.25) 0%, transparent 25%),
+                        radial-gradient(circle at 40% 80%, rgba(255, 255, 255, 0.2) 0%, transparent 15%),
+                        radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.35) 0%, transparent 18%),
+                        radial-gradient(circle at 10% 50%, rgba(255, 255, 255, 0.2) 0%, transparent 12%),
+                        radial-gradient(circle at 35% 45%, rgba(255, 255, 255, 0.4) 0%, transparent 22%),
+                        radial-gradient(circle at 65% 75%, rgba(255, 255, 255, 0.35) 0%, transparent 20%),
+                        radial-gradient(circle at 50% 15%, rgba(255, 255, 255, 0.45) 0%, transparent 28%),
+                        radial-gradient(ellipse at 30% 40%, #2d5016 0%, #3a611a 15%, transparent 30%),
+                        radial-gradient(ellipse at 55% 45%, #3a611a 0%, #2d5016 18%, transparent 32%),
+                        radial-gradient(ellipse at 45% 35%, #3a611a 0%, #2d5016 12%, transparent 20%),
+                        radial-gradient(ellipse at 65% 30%, #2d5016 0%, #3a611a 15%, transparent 28%),
+                        radial-gradient(ellipse at 75% 65%, #3a611a 0%, #2d5016 12%, transparent 22%),
+                        radial-gradient(ellipse at 25% 25%, #2d5016 0%, #3a611a 15%, transparent 25%),
+                        radial-gradient(circle at 0% 0%, #1e3a8a 0%, transparent 50%),
+                        radial-gradient(circle at 100% 100%, #1e40af 0%, transparent 50%),
+                        radial-gradient(circle at 50% 50%, #1e40af 0%, #1e3a8a 100%);
+            background-size: 200% 100%;
+            border-radius: 50%;
+            box-shadow: inset -6px -6px 12px rgba(0, 0, 0, 0.5), inset 2px 2px 8px rgba(255, 255, 255, 0.1), 0 0 30px rgba(59, 130, 246, 0.8), 0 0 60px rgba(59, 130, 246, 0.4);
+            animation: earthRotate 15s linear infinite;
+        }
+        
+        /* 月球轨道 */
+        .moon-orbit { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100px; height: 100px; border: 1px dashed rgba(255, 255, 255, 0.1); border-radius: 50%; }
+        
+        /* 月球纹理 */
+        .moon {
+            position: absolute; top: 50%; left: 50%; width: 15px; height: 15px;
+            background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8) 0%, rgba(200, 200, 200, 0.6) 8%, rgba(150, 150, 150, 0.4) 15%, transparent 25%),
+                        radial-gradient(circle at 70% 20%, rgba(255, 255, 255, 0.7) 0%, rgba(200, 200, 200, 0.5) 6%, rgba(150, 150, 150, 0.3) 12%, transparent 20%),
+                        radial-gradient(circle at 60% 60%, rgba(255, 255, 255, 0.6) 0%, rgba(200, 200, 200, 0.4) 5%, rgba(150, 150, 150, 0.2) 10%, transparent 18%),
+                        radial-gradient(circle at 20% 70%, rgba(255, 255, 255, 0.65) 0%, rgba(200, 200, 200, 0.45) 5%, rgba(150, 150, 150, 0.25) 12%, transparent 22%),
+                        radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.5) 0%, rgba(200, 200, 200, 0.3) 4%, rgba(150, 150, 150, 0.15) 8%, transparent 15%),
+                        radial-gradient(circle at 45% 50%, rgba(255, 255, 255, 0.55) 0%, rgba(200, 200, 200, 0.35) 4%, rgba(150, 150, 150, 0.2) 9%, transparent 16%),
+                        radial-gradient(circle at 15% 35%, rgba(255, 255, 255, 0.5) 0%, rgba(200, 200, 200, 0.3) 3%, rgba(150, 150, 150, 0.15) 7%, transparent 14%),
+                        radial-gradient(circle at 90% 45%, rgba(255, 255, 255, 0.45) 0%, rgba(200, 200, 200, 0.25) 3%, rgba(150, 150, 150, 0.1) 6%, transparent 12%),
+                        radial-gradient(ellipse at 40% 60%, #6b7280 0%, #4b5563 20%, transparent 40%),
+                        radial-gradient(ellipse at 70% 50%, #6b7280 0%, #4b5563 15%, transparent 35%),
+                        radial-gradient(ellipse at 25% 40%, #6b7280 0%, #4b5563 18%, transparent 38%),
+                        radial-gradient(circle, #9ca3af 0%, #6b7280 100%);
+            border-radius: 50%;
+            animation: moonOrbit 6s linear infinite;
+            box-shadow: inset -3px -3px 6px rgba(0, 0, 0, 0.6), inset 1px 1px 4px rgba(255, 255, 255, 0.2), 0 0 15px rgba(229, 231, 235, 0.5);
+        }
+        
+        /* 火星纹理 */
+        .mars {
+            width: 32px; height: 32px;
+            background: radial-gradient(ellipse at 30% 40%, rgba(200, 50, 50, 0.8) 0%, rgba(180, 40, 40, 0.7) 10%, rgba(150, 30, 30, 0.6) 20%, transparent 35%),
+                        radial-gradient(ellipse at 25% 35%, rgba(190, 55, 55, 0.7) 0%, rgba(170, 45, 45, 0.6) 8%, rgba(140, 35, 35, 0.5) 15%, transparent 28%),
+                        radial-gradient(ellipse at 35% 30%, rgba(190, 55, 55, 0.7) 0%, rgba(170, 45, 45, 0.6) 8%, rgba(140, 35, 35, 0.5) 15%, transparent 28%),
+                        radial-gradient(ellipse at 60% 50%, rgba(160, 40, 40, 0.7) 0%, rgba(140, 35, 35, 0.6) 12%, rgba(120, 30, 30, 0.5) 20%, transparent 32%),
+                        radial-gradient(ellipse at 70% 20%, rgba(200, 60, 60, 0.6) 0%, rgba(180, 50, 50, 0.5) 15%, rgba(150, 40, 40, 0.4) 25%, transparent 40%),
+                        radial-gradient(ellipse at 60% 70%, rgba(200, 60, 60, 0.6) 0%, rgba(180, 50, 50, 0.5) 15%, rgba(150, 40, 40, 0.4) 25%, transparent 40%),
+                        radial-gradient(ellipse at 10% 80%, rgba(200, 60, 60, 0.6) 0%, rgba(180, 50, 50, 0.5) 15%, rgba(150, 40, 40, 0.4) 25%, transparent 40%),
+                        radial-gradient(circle, #ef4444 0%, #dc2626 100%);
+            background-size: 200% 100%;
+            border-radius: 50%;
+            box-shadow: inset -5px -5px 10px rgba(0, 0, 0, 0.6), inset 2px 2px 6px rgba(255, 255, 255, 0.15), 0 0 25px rgba(239, 68, 68, 0.7), 0 0 50px rgba(239, 68, 68, 0.3);
+            animation: marsRotate 20s linear infinite;
+        }
+        
+        /* 木星纹理 */
+        .jupiter {
+            width: 60px; height: 60px;
+            background: radial-gradient(ellipse at 60% 50%, rgba(180, 30, 30, 0.9) 0%, rgba(160, 25, 25, 0.85) 25%, rgba(140, 20, 20, 0.8) 45%, transparent 60%),
+                        linear-gradient(180deg, transparent 30%, rgba(200, 120, 20, 0.8) 31%, rgba(220, 140, 30, 0.7) 35%, rgba(200, 120, 20, 0.8) 40%, transparent 41%),
+                        linear-gradient(180deg, transparent 45%, rgba(210, 130, 25, 0.8) 46%, rgba(230, 150, 35, 0.7) 50%, rgba(210, 130, 25, 0.8) 55%, transparent 56%),
+                        linear-gradient(180deg, transparent 15%, rgba(200, 120, 20, 0.8) 16%, rgba(220, 140, 30, 0.7) 20%, rgba(200, 120, 20, 0.8) 25%, transparent 26%),
+                        linear-gradient(180deg, transparent 0%, rgba(210, 130, 25, 0.8) 1%, rgba(230, 150, 35, 0.7) 5%, rgba(210, 130, 25, 0.8) 10%, transparent 11%),
+                        linear-gradient(180deg, #f59e0b 0%, #fbbf24 20%, #f59e0b 40%, #d97706 60%, #fbbf24 80%, #f59e0b 100%);
+            background-size: 200% 100%;
+            border-radius: 50%;
+            box-shadow: inset -8px -8px 16px rgba(0, 0, 0, 0.6), inset 3px 3px 12px rgba(255, 255, 255, 0.2), 0 0 40px rgba(245, 158, 11, 0.8), 0 0 80px rgba(245, 158, 11, 0.4);
+            animation: jupiterRotate 10s linear infinite;
+        }
+        
+        /* 土星纹理 */
+        .saturn {
+            width: 55px; height: 55px;
+            background: linear-gradient(180deg, rgba(251, 191, 36, 0.9) 0%, rgba(245, 158, 11, 0.85) 12%, rgba(251, 191, 36, 0.9) 25%, rgba(245, 158, 11, 0.85) 37%, rgba(251, 191, 36, 0.9) 50%, rgba(217, 119, 6, 0.85) 62%, rgba(251, 191, 36, 0.9) 75%, rgba(245, 158, 11, 0.85) 87%, rgba(251, 191, 36, 0.9) 100%);
+            background-size: 200% 100%;
+            border-radius: 50%;
+            box-shadow: inset -7px -7px 14px rgba(0, 0, 0, 0.6), inset 2px 2px 10px rgba(255, 255, 255, 0.2), 0 0 35px rgba(251, 191, 36, 0.7), 0 0 70px rgba(251, 191, 36, 0.3);
+            animation: saturnRotate 12s linear infinite;
+        }
+        
+        /* 土星环 */
+        .saturn-rings {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(25deg); width: 100px; height: 20px;
+            background: radial-gradient(ellipse, transparent 54%, rgba(255, 140, 40, 0.7) 55%, rgba(255, 140, 40, 0.7) 56%, transparent 57%, transparent 58%, rgba(255, 140, 40, 0.6) 59%, rgba(255, 140, 40, 0.6) 60%, transparent 61%),
+                        radial-gradient(ellipse, transparent 46%, rgba(255, 160, 60, 0.85) 47%, rgba(255, 160, 60, 0.85) 48%, transparent 49%, transparent 50%, rgba(255, 160, 60, 0.8) 51%, rgba(255, 160, 60, 0.8) 52%, transparent 53%),
+                        radial-gradient(ellipse, transparent 38%, rgba(255, 180, 80, 0.9) 39%, rgba(255, 180, 80, 0.9) 40%, transparent 41%, transparent 42%, rgba(255, 180, 80, 0.85) 43%, rgba(255, 180, 80, 0.85) 44%, transparent 45%),
+                        radial-gradient(ellipse, transparent 30%, rgba(255, 200, 100, 0.95) 31%, rgba(255, 200, 100, 0.95) 32%, transparent 33%, transparent 34%, rgba(255, 200, 100, 0.9) 35%, rgba(255, 200, 100, 0.9) 36%, transparent 37%);
+            border-radius: 50%;
+            box-shadow: 0 0 25px rgba(255, 200, 100, 0.8), inset 0 0 10px rgba(255, 255, 255, 0.5);
+            z-index: -1;
+        }
+        
+        /* 对话气泡样式 - 增强科技感 */
+        .bubble-left, .bubble-right {
+            position: relative;
+            background: linear-gradient(135deg, 
+                rgba(15, 23, 42, 0.85), 
+                rgba(30, 41, 59, 0.85), 
+                rgba(15, 23, 42, 0.85));
+            border: 1px solid transparent;
+            border-radius: 16px;
+            padding: 12px 16px;
+            max-width: 65%;
+            backdrop-filter: blur(15px);
+            font-family: 'Rajdhani', sans-serif;
+            color: #fff;
+            text-shadow:
+                0 0 8px #fff,
+                0 0 16px #93c5fd,
+                0 0 32px #8b5cf6;
+            transition: all 0.3s ease;
+            overflow: hidden;
+            background-clip: padding-box;
+            box-shadow: 
+                0 0 0 1px rgba(147, 197, 253, 0.3) inset,
+                0 0 25px rgba(147, 197, 253, 0.3),
+                0 8px 20px rgba(0, 0, 0, 0.2),
+                0 0 40px rgba(147, 197, 253, 0.15);
+            background-image: 
+                linear-gradient(rgba(147, 197, 253, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(147, 197, 253, 0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        
+        .bubble-left { 
+            align-self: flex-start; 
+            background: linear-gradient(135deg, rgba(30,41,59,0.7) 60%, rgba(147,197,253,0.12) 100%);
+            border: 1.5px solid rgba(147,197,253,0.25);
+            box-shadow:
+                0 0 0 2px rgba(147,197,253,0.18) inset,
+                0 0 24px 6px rgba(147,197,253,0.18),
+                0 8px 24px rgba(59,130,246,0.10),
+                0 0 48px rgba(147,197,253,0.10),
+                2px 2px 12px rgba(147,197,253,0.12);
+            backdrop-filter: blur(18px) brightness(1.08);
+            opacity: 0.98;
+            transition: box-shadow 0.3s, background 0.3s;
+        }
+        
+        .bubble-left:hover {
+            box-shadow:
+                0 0 0 2px rgba(147,197,253,0.32) inset,
+                0 0 36px 12px rgba(147,197,253,0.32),
+                0 12px 32px rgba(59,130,246,0.18),
+                0 0 72px rgba(147,197,253,0.18),
+                2px 2px 24px rgba(147,197,253,0.22);
+            background: linear-gradient(135deg, rgba(59,130,246,0.18) 0%, rgba(147,197,253,0.22) 100%);
+            opacity: 1;
+        }
+        
+        .bubble-right { 
+            align-self: flex-end;
+            background: linear-gradient(135deg, 
+                rgba(15, 23, 42, 0.85), 
+                rgba(30, 41, 59, 0.85), 
+                rgba(15, 23, 42, 0.85));
+            text-shadow: 0 0 8px rgba(34, 197, 94, 0.8);
+            box-shadow: 
+                0 0 0 1px rgba(34, 197, 94, 0.3) inset,
+                0 0 25px rgba(34, 197, 94, 0.3),
+                0 8px 20px rgba(0, 0, 0, 0.2),
+                0 0 40px rgba(34, 197, 94, 0.15),
+                -2px 2px 10px rgba(34, 197, 94, 0.2);
+        }
+        
+        /* 气泡箭头 - 科技感样式 */
+        .bubble-left::before,
+        .bubble-right::before {
+            content: ''; 
+            position: absolute; 
+            top: 16px; 
+            width: 0; 
+            height: 0;
+            border: 12px solid transparent;
+            filter: blur(0.5px);
+        }
+        
+        .bubble-left::before {
+            left: -24px; 
+            border-right-color: rgba(15, 23, 42, 0.85);
+            border-left: 0;
+            box-shadow: 
+                2px 0 10px rgba(147, 197, 253, 0.3),
+                1px 0 0 rgba(147, 197, 253, 0.3);
+        }
+        
+        .bubble-right::before {
+            right: -24px; 
+            border-left-color: rgba(15, 23, 42, 0.85);
+            border-right: 0;
+            box-shadow: 
+                -2px 0 10px rgba(34, 197, 94, 0.3),
+                -1px 0 0 rgba(34, 197, 94, 0.3);
+        }
+        
+        /* 气泡装饰线条 - 增强科技感 */
+        .bubble-left::after, 
+        .bubble-right::after {
+            content: ''; 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            right: 0; 
+            height: 2px;
+            background: linear-gradient(90deg, 
+                transparent, 
+                rgba(147, 197, 253, 0.8), 
+                transparent);
+            animation: lineGlow 2s ease-in-out infinite;
+        }
+        
+        .bubble-right::after { 
+            background: linear-gradient(90deg, 
+                transparent, 
+                rgba(34, 197, 94, 0.8), 
+                transparent); 
+        }
+        
+        @keyframes lineGlow { 
+            0%, 100% { 
+                opacity: 0.5; 
+                transform: translateX(0);
+            } 
+            50% { 
+                opacity: 1; 
+                transform: translateX(0);
+                box-shadow: 0 0 15px rgba(147, 197, 253, 0.8);
+            } 
+        }
+        
+        /* 气泡悬停效果 */
+        .bubble-left:hover,
+        .bubble-right:hover {
+            transform: translateY(-2px);
+            box-shadow: 
+                0 0 0 1px rgba(147, 197, 253, 0.5) inset,
+                0 0 35px rgba(147, 197, 253, 0.5),
+                0 12px 25px rgba(0, 0, 0, 0.3),
+                0 0 60px rgba(147, 197, 253, 0.3),
+                2px 2px 15px rgba(147, 197, 253, 0.4);
+        }
+        
+        .bubble-right:hover {
+            box-shadow: 
+                0 0 0 1px rgba(34, 197, 94, 0.5) inset,
+                0 0 35px rgba(34, 197, 94, 0.5),
+                0 12px 25px rgba(0, 0, 0, 0.3),
+                0 0 60px rgba(34, 197, 94, 0.3),
+                -2px 2px 15px rgba(34, 197, 94, 0.4);
+        }
+        
+        /* 输入框聚焦效果 */
+        .wish-input:focus { outline: none; box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.5); }
+        
+        /* 科技感飞船样式 */
+        .spaceship {
+            position: absolute; width: 150px; height: 80px;
+            background: linear-gradient(135deg, rgba(6, 182, 212, 0.95), rgba(59, 130, 246, 0.95), rgba(139, 92, 246, 0.95), rgba(59, 130, 246, 0.95), rgba(6, 182, 212, 0.95));
+            border-radius: 60% 60% 50% 50% / 70% 70% 30% 30%;
+            animation: spaceshipTakeoff 10s ease-in-out forwards;
+            box-shadow: 0 0 60px rgba(6, 182, 212, 1), 0 0 120px rgba(59, 130, 246, 0.9), 0 0 180px rgba(139, 92, 246, 0.7), inset 0 5px 20px rgba(255, 255, 255, 0.5), inset 0 -5px 20px rgba(0, 0, 0, 0.5);
+            z-index: 20;
+            top: calc(50% - 75px); left: calc(50% - 75px); transform: translate(-50%, -50%);
+            overflow: hidden;
+        }
+        
+        /* 飞船顶部天线 */
+        .spaceship::before {
+            content: ''; position: absolute; top: -25px; left: 50%; transform: translateX(-50%);
+            width: 6px; height: 25px; background: linear-gradient(180deg, rgba(6, 182, 212, 1), rgba(59, 130, 246, 1));
+            border-radius: 3px 3px 0 0; box-shadow: 0 0 20px rgba(6, 182, 212, 1);
+        }
+        
+        /* 飞船底部脉冲光束 */
+        .spaceship::after {
+            content: ''; position: absolute; bottom: -30px; left: 50%; transform: translateX(-50%);
+            width: 120px; height: 30px;
+            background: linear-gradient(90deg, transparent, rgba(6, 182, 212, 0.9), rgba(59, 130, 246, 1), rgba(139, 92, 246, 1), rgba(236, 72, 153, 0.9), rgba(59, 130, 246, 1), rgba(6, 182, 212, 0.9), transparent);
+            border-radius: 50%;
+            box-shadow: 0 0 50px rgba(6, 182, 212, 1), 0 0 100px rgba(59, 130, 246, 1), 0 0 150px rgba(139, 92, 246, 1), 0 0 200px rgba(236, 72, 153, 0.8);
+            animation: spaceshipBeamPulse 1s ease-in-out infinite alternate;
+        }
+        
+        @keyframes spaceshipBeamPulse {
+            0% { transform: translateX(-50%) scaleY(1); box-shadow: 0 0 50px rgba(6, 182, 212, 1), 0 0 100px rgba(59, 130, 246, 1), 0 0 150px rgba(139, 92, 246, 1), 0 0 200px rgba(236, 72, 153, 0.8); }
+            100% { transform: translateX(-50%) scaleY(1.8); box-shadow: 0 0 80px rgba(6, 182, 212, 1), 0 0 160px rgba(59, 130, 246, 1), 0 0 240px rgba(139, 92, 246, 1), 0 0 320px rgba(236, 72, 153, 1), 0 0 400px rgba(236, 72, 153, 0.6); }
+        }
+        
+        /* 飞船驾驶舱 */
+        .spaceship-cockpit {
+            position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
+            width: 60px; height: 35px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.4));
+            border-radius: 50% 50% 45% 45%;
+            box-shadow: inset 0 3px 12px rgba(255, 255, 255, 0.7), inset 0 -3px 12px rgba(0, 0, 0, 0.5), 0 0 30px rgba(255, 255, 255, 0.9);
+            overflow: hidden;
+            display: flex; justify-content: space-around; align-items: center; padding: 2px;
+        }
+        
+        /* CSS绘制的小狗 */
+        .css-dog, .css-sheep { width: 25px; height: 25px; position: relative; animation: pilotBounce 2s ease-in-out infinite alternate; }
+        
+        @keyframes pilotBounce { 0% { transform: scale(1) rotate(0deg); } 100% { transform: scale(1.1) rotate(5deg); } }
+        
+        .css-dog::before { content: ''; position: absolute; top: 8px; left: 2px; width: 21px; height: 15px; background: linear-gradient(135deg, #8B4513, #A0522D); border-radius: 50% 50% 40% 40%; box-shadow: inset -2px -2px 4px rgba(0, 0, 0, 0.3); }
+        .css-dog::after { content: ''; position: absolute; top: 0; left: 5px; width: 15px; height: 15px; background: linear-gradient(135deg, #8B4513, #A0522D); border-radius: 50%; box-shadow: inset -2px -2px 4px rgba(0, 0, 0, 0.3); }
+        
+        .css-dog .ears, .css-sheep .ears { position: absolute; top: 0; left: 0; width: 25px; height: 12px; }
+        
+        .css-dog .ears::before, .css-dog .ears::after {
+            content: ''; position: absolute; top: -3px; width: 6px; height: 10px; background: linear-gradient(180deg, #8B4513, #A0522D); border-radius: 50% 50% 0 0; box-shadow: inset -1px -1px 2px rgba(0, 0, 0, 0.3);
+        }
+        
+        .css-dog .ears::before { left: 3px; transform: rotate(-35deg); }
+        .css-dog .ears::after { right: 3px; transform: rotate(35deg); }
+        
+        .css-dog .eyes, .css-sheep .eyes { position: absolute; top: 4px; left: 0; width: 25px; height: 8px; display: flex; justify-content: space-around; }
+        
+        .css-dog .eyes::before, .css-dog .eyes::after, .css-sheep .eyes::before, .css-sheep .eyes::after {
+            content: ''; position: absolute; top: 3px; width: 3px; height: 3px; background: #000; border-radius: 50%; box-shadow: 0 0 2px rgba(255, 255, 255, 0.5);
+        }
+        
+        .css-dog .eyes::before, .css-sheep .eyes::before { left: 8px; }
+        .css-dog .eyes::after, .css-sheep .eyes::after { right: 8px; }
+        
+        .css-dog .nose, .css-sheep .nose { position: absolute; top: 8px; left: 11px; width: 3px; height: 3px; background: #000; border-radius: 50%; }
+        
+        .css-dog .mouth, .css-sheep .mouth { position: absolute; top: 10px; left: 11px; width: 3px; height: 2px; background: #000; border-radius: 0 0 50% 50%; }
+        
+        /* CSS绘制的羊 */
+        .css-sheep::before {
+            content: ''; position: absolute; top: 8px; left: 2px; width: 21px; height: 15px;
+            background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.9) 0%, transparent 50%),
+                        radial-gradient(circle at 70% 40%, rgba(255, 255, 255, 0.8) 0%, transparent 50%),
+                        radial-gradient(circle at 50% 70%, rgba(255, 255, 255, 0.85) 0%, transparent 50%),
+                        linear-gradient(135deg, #FFFFFF, #F0F0F0);
+            border-radius: 50% 50% 40% 40%;
+            box-shadow: 0 0 2px rgba(0, 0, 0, 0.2), inset -2px -2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .css-sheep::after {
+            content: ''; position: absolute; top: 0; left: 5px; width: 15px; height: 15px;
+            background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.9) 0%, transparent 50%),
+                        radial-gradient(circle at 70% 40%, rgba(255, 255, 255, 0.8) 0%, transparent 50%),
+                        linear-gradient(135deg, #FFFFFF, #F0F0F0);
+            border-radius: 50%;
+            box-shadow: 0 0 2px rgba(0, 0, 0, 0.2), inset -2px -2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .css-sheep .ears::before, .css-sheep .ears::after {
+            content: ''; position: absolute; top: 2px; width: 5px; height: 8px; background: linear-gradient(180deg, #F5DEB3, #E6C29E); border-radius: 50% 50% 0 0; box-shadow: inset -1px -1px 2px rgba(0, 0, 0, 0.2);
+        }
+        
+        .css-sheep .ears::before { left: 4px; transform: rotate(-25deg); }
+        .css-sheep .ears::after { right: 4px; transform: rotate(25deg); }
+        
+        /* 羊角 */
+        .css-sheep .horns { position: absolute; top: -4px; left: 0; width: 25px; height: 12px; }
+        
+        .css-sheep .horns::before, .css-sheep .horns::after {
+            content: ''; position: absolute; top: 0; width: 8px; height: 8px; border: 1.5px solid #D2B48C; border-radius: 50%; border-right-color: transparent; border-bottom-color: transparent; box-shadow: inset -1px -1px 2px rgba(0, 0, 0, 0.1);
+        }
+        
+        .css-sheep .horns::before { left: 2px; transform: rotate(-50deg); }
+        .css-sheep .horns::after { right: 2px; transform: rotate(140deg); }
+        
+        .css-sheep .nose { background: #F5DEB3; box-shadow: inset -1px -1px 1px rgba(0, 0, 0, 0.2); }
+        .css-sheep .mouth { background: #F5DEB3; box-shadow: inset -1px -1px 1px rgba(0, 0, 0, 0.2); }
+        
+        /* 飞船侧面推进器 */
+        .spaceship-thruster {
+            position: absolute; top: 50%; width: 12px; height: 30px;
+            background: linear-gradient(180deg, rgba(255, 0, 0, 0.9), rgba(255, 100, 0, 0.8), rgba(255, 200, 0, 0.6));
+            border-radius: 6px;
+            box-shadow: 0 0 25px rgba(255, 0, 0, 1), 0 0 50px rgba(255, 100, 0, 0.9), 0 0 75px rgba(255, 200, 0, 0.7);
+            animation: spaceshipThrusterPulse 0.8s ease-in-out infinite alternate;
+        }
+        
+        .spaceship-thruster.left-1 { left: -12px; transform: translateY(-50%) rotate(20deg); }
+        .spaceship-thruster.left-2 { left: -12px; top: 65%; transform: translateY(-50%) rotate(10deg); animation-delay: 0.2s; }
+        .spaceship-thruster.right-1 { right: -12px; transform: translateY(-50%) rotate(-20deg); }
+        .spaceship-thruster.right-2 { right: -12px; top: 65%; transform: translateY(-50%) rotate(-10deg); animation-delay: 0.2s; }
+        
+        @keyframes spaceshipThrusterPulse {
+            0% { opacity: 0.7; box-shadow: 0 0 25px rgba(255, 0, 0, 1), 0 0 50px rgba(255, 100, 0, 0.9), 0 0 75px rgba(255, 200, 0, 0.7); }
+            100% { opacity: 1; box-shadow: 0 0 40px rgba(255, 0, 0, 1), 0 0 80px rgba(255, 100, 0, 1), 0 0 120px rgba(255, 200, 0, 0.9), 0 0 160px rgba(255, 255, 0, 0.7); }
+        }
+        
+        /* 飞船能量环 */
+        .spaceship-energy-ring {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            border: 3px solid rgba(6, 182, 212, 0.8);
+            border-radius: 50%;
+            box-shadow: 0 0 30px rgba(6, 182, 212, 0.8), inset 0 0 30px rgba(6, 182, 212, 0.4);
+            animation: spaceshipEnergyRingRotate 2s linear infinite;
+        }
+        
+        .spaceship-energy-ring.outer { width: 130px; height: 50px; border-color: rgba(139, 92, 246, 0.8); animation-duration: 3s; }
+        .spaceship-energy-ring.middle { width: 100px; height: 40px; border-color: rgba(59, 130, 246, 0.8); animation-duration: 2s; }
+        .spaceship-energy-ring.inner { width: 70px; height: 30px; border-color: rgba(6, 182, 212, 0.8); animation-duration: 1.5s; }
+        
+        @keyframes spaceshipEnergyRingRotate { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
+        
+        /* 飞船表面发光点 */
+        .spaceship-light {
+            position: absolute; width: 4px; height: 4px; background: rgba(255, 255, 255, 0.9); border-radius: 50%;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+            animation: spaceshipLightPulse 1.2s ease-in-out infinite alternate;
+        }
+        
+        .spaceship-light:nth-child(1) { top: 20px; left: 20px; animation-delay: 0s; }
+        .spaceship-light:nth-child(2) { top: 20px; right: 20px; animation-delay: 0.2s; }
+        .spaceship-light:nth-child(3) { top: 40px; left: 15px; animation-delay: 0.4s; }
+        .spaceship-light:nth-child(4) { top: 40px; right: 15px; animation-delay: 0.6s; }
+        .spaceship-light:nth-child(5) { top: 60px; left: 25px; animation-delay: 0.8s; }
+        .spaceship-light:nth-child(6) { top: 60px; right: 25px; animation-delay: 1s; }
+        
+        @keyframes spaceshipLightPulse {
+            0% { opacity: 0.6; box-shadow: 0 0 10px rgba(255, 255, 255, 0.8); }
+            100% { opacity: 1; box-shadow: 0 0 20px rgba(255, 255, 255, 1); }
+        }
+        
+        /* 飞船尾部粒子效果 */
+        .spaceship-particles { position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); width: 100px; height: 50px; overflow: hidden; }
+        
+        .particle {
+            position: absolute; width: 3px; height: 3px; background: rgba(255, 0, 0, 0.8); border-radius: 50%;
+            animation: particleFly 0.8s linear infinite;
+        }
+        
+        @keyframes particleFly {
+            0% { top: 0; left: 50%; opacity: 1; transform: translateX(-50%) scale(1); }
+            100% { top: 100px; left: calc(50% + (Math.random() - 0.5) * 100px); opacity: 0; transform: translateX(-50%) scale(0.5); }
+        }
+        
+        /* 主容器立体效果 */
+        .main-container {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(8px);
+            border-radius: 24px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.05), inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            transition: all 0.8s ease;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        
+        .main-container.visible { opacity: 1; transform: translateY(0); }
+        .main-container.hidden { opacity: 0; pointer-events: none; }
+        
+        /* 输入区域样式 */
+        .input-area { background: rgba(15, 23, 42, 0.1); backdrop-filter: blur(6px); border-top: 1px solid rgba(255, 255, 255, 0.02); }
+        
+        /* 愿望展示区域样式 */
+        .wish-display-area { background: linear-gradient(135deg, rgba(236, 72, 153, 0.02), rgba(249, 115, 22, 0.02)); backdrop-filter: blur(6px); border-top: 1px solid rgba(255, 255, 255, 0.02); }
+        
+        /* 宇宙感切换按钮样式 */
+        .toggle-button {
+            position: fixed; top: 20px; left: 20px; z-index: 100;
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95));
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(147, 197, 253, 0.6);
+            border-radius: 12px;
+            padding: 12px 24px;
+            color: white;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 25px rgba(147, 197, 253, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15), inset 0 -1px 0 rgba(0, 0, 0, 0.25), 0 4px 12px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            text-shadow: 0 0 8px rgba(147, 197, 253, 0.6);
+            font-family: 'Orbitron', sans-serif;
+        }
+        
+        /* 按钮上的星星装饰 */
+        .toggle-button::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: radial-gradient(2px 2px at 20px 30px, white, transparent), radial-gradient(2px 2px at 40px 70px, white, transparent), radial-gradient(1px 1px at 50px 20px, white, transparent), radial-gradient(1px 1px at 90px 80px, white, transparent), radial-gradient(2px 2px at 130px 40px, white, transparent);
+            background-repeat: repeat;
+            background-size: 200px 200px;
+            opacity: 0.3;
+            animation: starTwinkle 3s infinite;
+            pointer-events: none;
+        }
+        
+        @keyframes starTwinkle { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.6; } }
+        
+        /* 按钮悬停效果 */
+        .toggle-button:hover {
+            background: linear-gradient(135deg, rgba(15, 23, 42, 1), rgba(30, 41, 59, 1));
+            transform: translateY(-2px);
+            box-shadow: 0 0 35px rgba(147, 197, 253, 0.7), 0 8px 20px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.25), inset 0 -1px 0 rgba(0, 0, 0, 0.35), 0 0 60px rgba(147, 197, 253, 0.4);
+            text-shadow: 0 0 12px rgba(147, 197, 253, 0.9), 0 0 24px rgba(147, 197, 253, 0.6);
+        }
+        
+        /* 按钮点击效果 */
+        .toggle-button:active {
+            transform: translateY(0);
+            box-shadow: 0 0 25px rgba(147, 197, 253, 0.5), 0 4px 12px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15), inset 0 -1px 0 rgba(0, 0, 0, 0.45), 0 0 40px rgba(147, 197, 253, 0.3);
+        }
+        
+        /* 标题科技感动画 */
+        @keyframes titleGlow {
+            0%, 100% { text-shadow: 0 0 12px rgba(255, 255, 255, 0.9), 0 0 24px rgba(59, 130, 246, 0.7), 0 0 36px rgba(139, 92, 246, 0.5); }
+            50% { text-shadow: 0 0 20px rgba(255, 255, 255, 1), 0 0 40px rgba(59, 130, 246, 0.9), 0 0 60px rgba(139, 92, 246, 0.7), 0 0 80px rgba(236, 72, 153, 0.5); }
+        }
+        
+        @keyframes cyberNeonGradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        /* 标题浮动动画 */
+        @keyframes titleFloat { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-8px); } }
+        
+        /* 副标题呼吸动画 */
+        @keyframes subtitlePulse { 0%, 100% { opacity: 0.85; } 50% { opacity: 1; } }
+        
+        /* 标题区域样式 */
+        #titleArea {
+            text-align: center;
+            margin-bottom: 2rem;
+            animation: fadeIn 1s ease-out forwards, titleFloat 3s ease-in-out infinite;
+        }
+        
+        #titleArea h1 {
+            font-size: 2.6rem;
+            font-family: 'Orbitron', 'Rajdhani', Arial, sans-serif;
+            font-weight: 900;
+            letter-spacing: 3px;
+            /* 霓虹蓝紫循环渐变，赛博感 */
+            background: linear-gradient(
+                120deg,
+                #60a5fa 0%,
+                #38bdf8 15%,
+                #6366f1 35%,
+                #a21caf 55%,
+                #8b5cf6 70%,
+                #38bdf8 85%,
+                #60a5fa 100%
+            );
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-fill-color: transparent;
+            animation: cyberNeonGradient 4s linear infinite, titleGlow 2s ease-in-out infinite;
+            text-shadow:
+                0 0 16px #8b5cf6,
+                0 0 32px #60a5fa,
+                0 0 48px #a21caf,
+                0 0 64px #38bdf8;
+        }
+        
+        #titleArea p {
+            font-size: 1rem;
+            font-family: 'Orbitron', 'Rajdhani', Arial, sans-serif;
+            font-weight: 700;
+            letter-spacing: 2px;
+            background: linear-gradient(90deg, #38bdf8 0%, #8b5cf6 60%, #60a5fa 100%);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-fill-color: transparent;
+            animation: gradientShift 3s ease-in-out infinite;
+            text-shadow: 0 0 16px #60a5fa, 0 0 32px #8b5cf6;
+        }
+        
+        /* 科技感愿望显示框样式 */
+        #wishContent {
+            background: linear-gradient(135deg, rgba(6, 182, 212, 0.15), rgba(59, 130, 246, 0.15), rgba(139, 92, 246, 0.15), rgba(59, 130, 246, 0.15), rgba(6, 182, 212, 0.15));
+            border: 1px solid rgba(147, 197, 253, 0.3);
+            /* 蓝色外框发光效果 */
+            box-shadow:
+                0 0 12px 2px #3b82f6,
+                0 0 24px 4px #60a5fa,
+                0 0 30px rgba(147, 197, 253, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+            border-radius: 16px;
+            padding: 24px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #ffffff;
+            text-shadow: 0 0 10px rgba(147, 197, 253, 0.8);
+            position: relative;
+            overflow: hidden;
+            animation: wishGlow 2s ease-in-out infinite alternate;
+        }
+        
+        @keyframes wishGlow {
+            0% { box-shadow: 0 0 30px rgba(147, 197, 253, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 -1px 0 rgba(0, 0, 0, 0.2); }
+            100% { box-shadow: 0 0 50px rgba(147, 197, 253, 0.5), 0 0 80px rgba(139, 92, 246, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15), inset 0 -1px 0 rgba(0, 0, 0, 0.25); }
+        }
+        
+        /* 愿望框装饰线条 */
+        #wishContent::before, #wishContent::after {
+            content: ''; position: absolute; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(147, 197, 253, 0.6), transparent);
+            animation: lineGlow 3s ease-in-out infinite;
+        }
+        
+        #wishContent::before { top: 0; }
+        #wishContent::after { bottom: 0; animation-direction: reverse; }
+        
+        /* 响应式标题调整 */
+        @media (max-width: 768px) {
+            #titleArea h1 { font-size: 2rem; }
+            #titleArea p { font-size: 0.95rem; }
+            #wishContent { font-size: 1rem; padding: 16px; }
+            .solar-system { width: 100vw; height: 100vw; }
+        }
+        
+        /* 发光爱心样式 */
+        .glowing-heart {
+            font-size: 24px;
+            color: #ff6b6b;
+            animation: heartGlow 1s ease-out forwards, heartPulse 2s ease-in-out infinite;
+            display: inline-block;
+        }
+        
+        @keyframes heartGlow {
+            0% { transform: scale(0) rotate(0deg); opacity: 0; filter: blur(10px); }
+            50% { transform: scale(1.2) rotate(180deg); opacity: 1; filter: blur(0px); }
+            100% { transform: scale(1) rotate(360deg); opacity: 1; filter: blur(0px); }
+        }
+        
+        @keyframes heartPulse {
+            0%, 100% { transform: scale(1); text-shadow: 0 0 10px #ff6b6b, 0 0 20px #ff6b6b, 0 0 30px #ff6b6b, 0 0 40px #ff6b6b; }
+            50% { transform: scale(1.1); text-shadow: 0 0 15px #ff6b6b, 0 0 30px #ff6b6b, 0 0 45px #ff6b6b, 0 0 60px #ff6b6b; }
+        }
+        
+        /* 文字消失动画 */
+        @keyframes textFadeOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-10px); } }
+        
+        /* === 头像泡泡增强效果 === */
+        /* 头像呼吸动画 */
+        @keyframes avatarBreath {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 15px rgba(147, 197, 253, 0.5), 0 0 30px rgba(147, 197, 253, 0.3); }
+            50% { transform: scale(1.05); box-shadow: 0 0 25px rgba(147, 197, 253, 0.8), 0 0 50px rgba(147, 197, 253, 0.5); }
+        }
+        
+        /* 右侧头像（小狗）特殊呼吸效果 */
+        @keyframes avatarBreathRight {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 15px rgba(34, 197, 94, 0.5), 0 0 30px rgba(34, 197, 94, 0.3); }
+            50% { transform: scale(1.05); box-shadow: 0 0 25px rgba(34, 197, 94, 0.8), 0 0 50px rgba(34, 197, 94, 0.5); }
+        }
+        
+        /* 头像悬停动画 */
+        @keyframes avatarHover {
+            0% { transform: scale(1) rotate(0deg); }
+            25% { transform: scale(1.1) rotate(5deg); }
+            50% { transform: scale(1.1) rotate(0deg); }
+            75% { transform: scale(1.1) rotate(-5deg); }
+            100% { transform: scale(1) rotate(0deg); }
+        }
+        
+        /* 头像基础样式增强 */
+        .chat-avatar {
+            position: relative;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            background-clip: padding-box;
+            overflow: hidden;
+
+        }
+        
+        /* 左侧头像（小羊）增强 */
+        .chat-avatar.left {
+            animation: avatarBreath 3s ease-in-out infinite;
+            box-shadow: 0 0 15px rgba(147, 197, 253, 0.5), 0 0 30px rgba(147, 197, 253, 0.3);
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.2));
+            border-color: rgba(147, 197, 253, 0.5);
+        }
+        
+        /* 右侧头像（小狗）增强 */
+        .chat-avatar.right {
+            animation: avatarBreathRight 3s ease-in-out infinite;
+            box-shadow: 0 0 15px rgba(34, 197, 94, 0.5), 0 0 30px rgba(34, 197, 94, 0.3);
+            background: linear-gradient(135deg, rgba(52, 211, 153, 0.4), rgba(52, 211, 153, 0.2));
+            border-color: rgba(34, 197, 94, 0.5);
+        }
+        
+        /* 头像悬停效果 */
+        .chat-avatar:hover {
+            animation: avatarHover 0.6s ease-in-out forwards;
+            z-index: 10;
+        }
+        
+        /* 头像发光边框 */
+        .chat-avatar::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #93c5fd, #8b5cf6, #ec4899, #93c5fd);
+            background-size: 400% 400%;
+            animation: avatarBorderRotate 4s linear infinite;
+            z-index: -1;
+        }
+        
+        /* 右侧头像边框颜色 */
+        .chat-avatar.right::before {
+            background: linear-gradient(45deg, #34d399, #10b981, #059669, #34d399);
+        }
+        
+        /* 头像边框旋转动画 */
+        @keyframes avatarBorderRotate {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 400% 50%; }
+        }
+        
+        /* 头像内部发光点 */
+        .chat-avatar::after {
+            content: '';
+            position: absolute;
+            top: 10%;
+            right: 10%;
+            width: 4px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+            animation: avatarInnerGlow 2s ease-in-out infinite alternate;
+        }
+        
+        /* 头像内部发光动画 */
+        @keyframes avatarInnerGlow {
+            0% { opacity: 0.6; transform: scale(1); }
+            100% { opacity: 1; transform: scale(1.5); }
+        }
+        
+        .send-wish-btn {
+            background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%);
+            color: #fff;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-shadow: 0 0 8px #93c5fd, 0 0 16px #8b5cf6;
+            box-shadow: 0 0 24px rgba(59,130,246,0.25), 0 0 48px rgba(139,92,246,0.15);
+            border: none;
+            outline: none;
+            transition: 
+                box-shadow 0.3s cubic-bezier(.4,2,.3,1), 
+                transform 0.2s cubic-bezier(.4,2,.3,1), 
+                background 0.3s;
+        }
+        .send-wish-btn:hover, .send-wish-btn:focus {
+            transform: scale(1.08);
+            box-shadow: 0 0 40px #3b82f6, 0 0 80px #8b5cf6, 0 0 120px #ec4899, 0 0 24px #fff;
+            background: linear-gradient(90deg, #2563eb 0%, #a21caf 100%);
+            color: #fff;
+            text-shadow: 0 0 16px #fff, 0 0 32px #8b5cf6;
+        }
+
+        /* 藍色發光順時針旋轉效果 for input 框（更集中、更柔和） */
+        .wish-input {
+            /* ...existing code... */
+            box-shadow: 0 0 8px 2px #3b82f6, 0 0 16px 4px #60a5fa;
+            border: 2.5px solid #3b82f6;
+            position: relative;
+            z-index: 1;
+            animation: wishInputGlowRotate 2.5s linear infinite;
+        }
+        @keyframes wishInputGlowRotate {
+            0% {
+                box-shadow: 0 0 8px 2px #3b82f6, 0 0 16px 4px #60a5fa;
+                border-color: #3b82f6;
+                filter: brightness(0.85) hue-rotate(0deg);
+            }
+            100% {
+                box-shadow: 0 0 8px 2px #60a5fa, 0 0 16px 4px #3b82f6;
+                border-color: #60a5fa;
+                filter: brightness(0.85) hue-rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body class="space-bg min-h-screen p-4 md:p-8">
+    <!-- 动态星空背景 -->
+    <div id="stars" class="absolute inset-0"></div>
+    
+    <!-- 星云装饰 -->
+    <div class="nebula" style="width: 300px; height: 200px; background: radial-gradient(circle, #6366f1, transparent); top: 10%; left: 5%;"></div>
+    <div class="nebula" style="width: 400px; height: 300px; background: radial-gradient(circle, #ec4899, transparent); bottom: 20%; right: 10%;"></div>
+    <div class="nebula" style="width: 250px; height: 150px; background: radial-gradient(circle, #10b981, transparent); top: 40%; right: 30%;"></div>
+    
+    <!-- 流星 -->
+    <div class="shooting-star" style="top: 20%; animation-delay: 1s;"></div>
+    <div class="shooting-star" style="top: 50%; animation-delay: 3s;"></div>
+    <div class="shooting-star" style="top: 70%; animation-delay: 5s;"></div>
+    
+    <!-- 太阳系 -->
+    <div class="solar-system">
+        <!-- 太阳 -->
+        <div class="sun"></div>
+        
+        <!-- 地球轨道 -->
+        <div class="orbit" style="width: 300px; height: 300px;"></div>
+        <div class="planet-container" style="--orbit-radius: 150px; --orbit-duration: 20s;">
+            <div class="earth-container">
+                <div class="planet earth"></div>
+                <!-- 月球轨道 -->
+                <div class="moon-orbit"></div>
+                <div class="moon"></div>
+            </div>
+        </div>
+        
+        <!-- 火星轨道 -->
+        <div class="orbit" style="width: 450px; height: 450px;"></div>
+        <div class="planet-container" style="--orbit-radius: 225px; --orbit-duration: 30s;">
+            <div class="planet mars"></div>
+        </div>
+        
+        <!-- 木星轨道 -->
+        <div class="orbit" style="width: 650px; height: 650px;"></div>
+        <div class="planet-container" style="--orbit-radius: 325px; --orbit-duration: 50s;">
+            <div class="planet jupiter"></div>
+        </div>
+        
+        <!-- 土星轨道 -->
+        <div class="orbit" style="width: 850px; height: 850px;"></div>
+        <div class="planet-container" style="--orbit-radius: 425px; --orbit-duration: 70s;">
+            <div class="planet saturn">
+                <!-- 土星环 -->
+                <div class="saturn-rings"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 科技感飞船 -->
+    <div id="spaceship" class="spaceship">
+        <!-- 飞船表面发光点 -->
+        <div class="spaceship-light"></div>
+        <div class="spaceship-light"></div>
+        <div class="spaceship-light"></div>
+        <div class="spaceship-light"></div>
+        <div class="spaceship-light"></div>
+        <div class="spaceship-light"></div>
+        
+        <!-- 飞船驾驶舱 -->
+        <div class="spaceship-cockpit">
+            <!-- CSS绘制的小狗 -->
+            <div class="css-dog">
+                <div class="ears"></div>
+                <div class="eyes"></div>
+                <div class="nose"></div>
+                <div class="mouth"></div>
+            </div>
+            <!-- CSS绘制的羊 -->
+            <div class="css-sheep">
+                <div class="horns"></div>
+                <div class="ears"></div>
+                <div class="eyes"></div>
+                <div class="nose"></div>
+                <div class="mouth"></div>
+            </div>
+        </div>
+        
+        <!-- 飞船能量环 -->
+        <div class="spaceship-energy-ring outer"></div>
+        <div class="spaceship-energy-ring middle"></div>
+        <div class="spaceship-energy-ring inner"></div>
+        
+        <!-- 飞船侧面推进器 -->
+        <div class="spaceship-thruster left-1"></div>
+        <div class="spaceship-thruster left-2"></div>
+        <div class="spaceship-thruster right-1"></div>
+        <div class="spaceship-thruster right-2"></div>
+        
+        <!-- 飞船尾部粒子效果 -->
+        <div class="spaceship-particles">
+            <div class="particle" style="animation-delay: 0s;"></div>
+            <div class="particle" style="animation-delay: 0.2s;"></div>
+            <div class="particle" style="animation-delay: 0.4s;"></div>
+            <div class="particle" style="animation-delay: 0.6s;"></div>
+        </div>
+    </div>
+    
+    <!-- 宇宙感主容器切换按钮 -->
+    <button id="toggleContainerBtn" class="toggle-button">
+        <span>隐藏对话框 👁️‍🗨️</span>
+    </button>
+    
+    <div class="max-w-3xl mx-auto relative z-10">
+        <!-- 标题区域 -->
+        <div id="titleArea" class="text-center mb-8 animate-fadeIn" style="opacity: 0; transition: opacity 0.8s ease;">
+            <h1 class="text-4xl font-bold mb-2">🚀小羊太空生日派对 🎂</h1>
+            <p class="text-lg">与汪星朋友一起庆祝生日</p>
+        </div>
+        
+        <!-- 主容器 -->
+        <div id="mainContainer" class="main-container">
+            <!-- 对话区域 -->
+            <div id="chatArea" class="p-6 h-[400px] overflow-y-auto space-y-4">
+                <!-- 对话将通过JavaScript动态添加 -->
+            </div>
+            
+            <!-- 愿望输入区域 -->
+            <div id="wishInputArea" class="input-area p-6 hidden">
+                <div class="flex gap-3">
+                    <input 
+                        type="text" 
+                        id="wishInput" 
+                        placeholder="在这里写下你的生日愿望..." 
+                        class="wish-input flex-1 p-3 rounded-full transition-all
+                            border-2 border-blue-400
+                            bg-transparent
+                            shadow-[0_0_16px_4px_rgba(59,130,246,0.18)]
+                            focus:(border-blue-500 shadow-[0_0_32px_8px_rgba(59,130,246,0.32)])
+                            outline-none
+                            text-base font-orbitron tracking-wide text-blue-300
+                            backdrop-blur-xl
+                        "
+                    >
+                    <button 
+                        id="sendWishBtn" 
+                        class="send-wish-btn px-4 py-2 rounded-full font-bold transition-all transform text-base shadow-lg scale-110
+                            font-orbitron tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 drop-shadow-lg animate-pulse"
+                    >
+                        发送愿望
+                    </button>
+                </div>
+                <p 
+                    class="text-xs mt-6 text-center font-orbitron font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 drop-shadow-lg animate-pulse"
+                    style="letter-spacing:2px;"
+                >
+                    你的愿望会被传递到汪星球✨
+                </p>
+            </div>
+            
+            <!-- 愿望展示区域 -->
+            <div id="wishDisplay" class="wish-display-area p-6 hidden">
+                <div class="text-center mb-4">
+                    <h3 
+                        class="text-2xl font-bold mb-1"
+                        style="
+                            font-family: 'Orbitron', 'Rajdhani', Arial, sans-serif;
+                            font-weight: 900;
+                            letter-spacing: 2px;
+                            background: linear-gradient(120deg, #60a5fa 0%, #6366f1 50%, #a21caf 100%);
+                            background-size: 300% 300%;
+                            -webkit-background-clip: text;
+                            -webkit-text-fill-color: transparent;
+                            background-clip: text;
+                            text-fill-color: transparent;
+                            animation: cyberNeonGradient 3s linear infinite, titleGlow 2s ease-in-out infinite;
+                            /* 光效减弱 */
+                            text-shadow: 0 0 8px #8b5cf6, 0 0 16px #60a5fa, 0 0 24px #a21caf;
+                        "
+                    >✨ 恭喜愿望发送成功✨</h3>
+                    <p 
+                        class="text-blue-200"
+                        style="
+                            font-family: 'Rajdhani', 'Orbitron', Arial, sans-serif;
+                            font-weight: 600;
+                            letter-spacing: 1.5px;
+                            font-size: 0.95rem;
+                            background: linear-gradient(90deg, #14b8a6 0%, #38bdf8 50%, #22d3ee 100%);
+                            background-size: 200% 200%;
+                            -webkit-background-clip: text;
+                            -webkit-text-fill-color: transparent;
+                            background-clip: text;
+                            text-fill-color: transparent;
+                            animation: gradientShift 2.5s ease-in-out infinite, subtitlePulse 2s ease-in-out infinite;
+                            text-shadow: 0 0 12px #14b8a6, 0 0 24px #38bdf8;
+                        "
+                    >让我们一起期待愿望实现吧</p>
+                </div>
+                <div id="wishContent" class="p-5 rounded-xl shadow-md text-center text-lg font-medium text-gray-800 mb-4"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 创建动态星空 - 优化性能，减少DOM操作
+        function createStars() {
+            const starsContainer = document.getElementById('stars');
+            const starCount = 150;
+            let starsHTML = '';
+            
+            for (let i = 0; i < starCount; i++) {
+                const x = Math.random() * 100;
+                const y = Math.random() * 100;
+                const starType = Math.random();
+                let starClass = 'star';
+                
+                if (starType < 0.6) starClass += ' star-small';
+                else if (starType < 0.9) starClass += ' star-medium';
+                else starClass += ' star-large';
+                
+                const delay = Math.random() * 5;
+                const duration = Math.random() * 3 + 2;
+                
+                starsHTML += `<div class="${starClass}" style="left: ${x}%; top: ${y}%; animation-delay: ${delay}s; animation-duration: ${duration}s;"></div>`;
+            }
+            
+            starsContainer.innerHTML = starsHTML;
+        }
+        
+        // DOM元素
+        const chatArea = document.getElementById('chatArea');
+        const wishInputArea = document.getElementById('wishInputArea');
+        const wishDisplay = document.getElementById('wishDisplay');
+        const wishInput = document.getElementById('wishInput');
+        const sendWishBtn = document.getElementById('sendWishBtn');
+        const wishContent = document.getElementById('wishContent');
+        const mainContainer = document.getElementById('mainContainer');
+        const titleArea = document.getElementById('titleArea');
+        const toggleContainerBtn = document.getElementById('toggleContainerBtn');
+        const spaceship = document.getElementById('spaceship');
+        
+        // 自动滚动到聊天底部
+        function scrollToBottom() {
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+        
+        // 添加对话气泡
+        function addChatBubble(side, content, avatar, bgColor = '', isSpecial = false) {
+            const bubble = document.createElement('div');
+            bubble.className = `flex items-start gap-3 ${side === 'right' ? 'justify-end' : ''} animate-fadeIn`;
+            
+            const bubbleClass = side === 'right' ? 'bubble-right' : 'bubble-left';
+            const bubbleBg = bgColor ? ` ${bgColor}` : '';
+            const specialId = isSpecial ? 'id="specialBubble"' : '';
+            const avatarSide = side === 'left' ? 'left' : 'right';
+            
+            bubble.innerHTML = `
+                ${side === 'left' ? `
+                    <div class="w-10 h-10 rounded-full chat-avatar ${avatarSide} flex items-center justify-center font-bold ${avatar.textColor}">${avatar.emoji}</div>
+                    <div ${specialId} class="${bubbleClass}${bubbleBg}">${content}</div>
+                ` : `
+                    <div ${specialId} class="${bubbleClass}${bubbleBg}">${content}</div>
+                    <div class="w-10 h-10 rounded-full chat-avatar ${avatarSide} flex items-center justify-center font-bold ${avatar.textColor}">${avatar.emoji}</div>
+                `}
+            `;
+            
+            chatArea.appendChild(bubble);
+            scrollToBottom();
+        }
+        
+        // 对话流程
+        function startConversation() {
+            // 定义角色头像
+            const sheepAvatar = {
+                emoji: '🐑',
+                bgColor: 'bg-white/40',
+                textColor: 'text-gray-800'
+            };
+            
+            const dogAvatar = {
+                emoji: '🐶',
+                bgColor: 'bg-green-200/40',
+                textColor: 'text-green-800'
+            };
+            
+            // 对话序列
+            const conversation = [
+                { delay: 500, side: 'left', content: '哇！阿曦小狗你居然在这里', avatar: sheepAvatar },
+                { delay: 1500, side: 'right', content: '惊喜吧！我是来参加你的生日派对的！今天是你的生日 快许个愿望吧！✨', avatar: dogAvatar },
+                { delay: 2500, side: 'right', content: '可以在下面的输入框中写下你的愿望 然后点击发送按钮', avatar: dogAvatar },
+                { delay: 3500, side: 'right', content: '点击左上角的隐藏按钮就可以看到我为你打下的宇宙啦', avatar: dogAvatar, isSpecial: true }
+            ];
+            
+            // 执行对话
+            conversation.forEach(msg => {
+                setTimeout(() => {
+                    addChatBubble(msg.side, msg.content, msg.avatar, '', msg.isSpecial);
+                    
+                    // 最后一条消息后显示输入框
+                    if (msg.delay === 3500) {
+                        setTimeout(() => {
+                            wishInputArea.classList.remove('hidden');
+                            wishInput.focus();
+                            
+                            // 10秒后将特殊气泡的文字替换为发光爱心
+                            setTimeout(() => {
+                                const specialBubble = document.getElementById('specialBubble');
+                                if (specialBubble) {
+                                    specialBubble.innerHTML = '<span class="glowing-heart">❤️</span>';
+                                }
+                            }, 10000);
+                        }, 1000);
+                    }
+                }, msg.delay);
+            });
+        }
+        
+        // 发送愿望
+        async function sendWish() {
+            const wish = wishInput.value.trim();
+            if (!wish) {
+                // 更友好的提示
+                const errorMsg = document.createElement('div');
+                errorMsg.className = 'text-center text-red-400 text-sm mt-2 animate-fadeIn';
+                errorMsg.textContent = '请先写下你的生日愿望哦！';
+                wishInputArea.appendChild(errorMsg);
+                
+                setTimeout(() => {
+                    errorMsg.remove();
+                }, 2000);
+                return;
+            }
+
+            // 新增：发送到后端（带 CORS 支持）
+            try {
+                await fetch ('http://127.0.0.1:5004/send_wish', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ wish }),
+                    // credentials: 'include' // 如需携带 cookie 可启用
+                });
+            } catch (e) {
+                // 可选：错误提示
+                console.error('邮件发送失败', e);
+            }
+
+            // 定义角色头像
+            const sheepAvatar = {
+                emoji: '🐑',
+                bgColor: 'bg-white/40',
+                textColor: 'text-gray-800'
+            };
+            
+            const dogAvatar = {
+                emoji: '🐶',
+                bgColor: 'bg-green-200/40',
+                textColor: 'text-green-800'
+            };
+            
+            // 显示用户愿望气泡
+            addChatBubble('left', wish, sheepAvatar);
+            
+            // 显示小狗的回应
+            setTimeout(() => {
+                addChatBubble('right', '太棒了！你的愿望已经飞向汪汪星🚀<br>让我们一起等待奇迹发生吧！✨', dogAvatar);
+                
+                // 显示愿望展示区域
+                wishContent.textContent = wish;
+                wishInputArea.classList.add('hidden');
+                wishDisplay.classList.remove('hidden');
+            }, 800);
+            
+            // 清空输入框
+            wishInput.value = '';
+        }
+        
+        // 切换主容器显示/隐藏
+        function toggleContainer() {
+            const isHidden = mainContainer.classList.toggle('hidden');
+            
+            if (isHidden) {
+                toggleContainerBtn.querySelector('span').textContent = '显示对话框 👁️';
+            } else {
+                toggleContainerBtn.querySelector('span').textContent = '隐藏对话框 👁️‍🗨️';
+            }
+        }
+        
+        // 事件监听
+        sendWishBtn.addEventListener('click', sendWish);
+        toggleContainerBtn.addEventListener('click', toggleContainer);
+        
+        // 回车键发送
+        wishInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendWish();
+            }
+        });
+        
+        // 页面加载完成后初始化
+        window.addEventListener('load', () => {
+            createStars();
+            
+            // 飞船动画完成后开始对话流程
+            setTimeout(() => {
+                // 隐藏飞船
+                spaceship.style.display = 'none';
+                
+                // 显示标题区域
+                titleArea.style.opacity = '1';
+                
+                // 显示主容器（带淡入效果）
+                mainContainer.classList.add('visible');
+                
+                // 启动对话流程
+                startConversation();
+            }, 10000);
+        });
+    </script>
+</body>
+</html>
